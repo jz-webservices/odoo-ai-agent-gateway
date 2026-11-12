@@ -41,7 +41,7 @@ class AiAgent(models.Model):
     can_use_attachments = fields.Boolean(
         string='Attachments',
         help='Actions: attachments.list, attachments.read, attachments.create')
-    can_send_mail = fields.Boolean(string='Send mails', help='Action: mail.send')
+    can_send_mail = fields.Boolean(string='Send mail', help='Action: mail.send')
 
     # Scope
     read_blog_ids = fields.Many2many(
@@ -55,6 +55,11 @@ class AiAgent(models.Model):
         'ir.attachment', 'ai_agent_attachment_rel', 'agent_id', 'attachment_id',
         string='Shared files',
         help='Files the agent may download, e.g. a style guide or a fact sheet.')
+    edit_agent_ids = fields.Many2many(
+        'ai.agent', 'ai_agent_edit_agent_rel', 'agent_id', 'other_agent_id',
+        string='May edit drafts of',
+        help='Unpublished drafts created by these agents may be edited by this agent too, '
+             'e.g. a fact-checking agent that corrects the drafts of a writing agent.')
     author_id = fields.Many2one(
         'res.partner', string='Draft author',
         help='Author set on the drafts this agent creates.')

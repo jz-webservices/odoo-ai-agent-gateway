@@ -118,6 +118,21 @@ class TestCapabilities(GatewayCase):
         self.assertRejected(404, 'posts.write', other_token, id=post_id, vals={'subtitle': 'x'})
         self.assertRejected(404, 'attachments.list', other_token, post_id=post_id)
 
+    def test_reviewer_may_edit_drafts_of_writer(self):
+        reviewer = self.env['ai.agent'].create({
+            'name': 'Reviewer', 'can_write_drafts': True, 'can_use_attachments': True,
+            'edit_agent_ids': [(6, 0, self.agent.ids)]})
+        token = reviewer._generate_token()
+        post_id = self.create_draft()
+        self.call('posts.write', token, id=post_id, vals={'subtitle': 'Checked'})
+        self.assertEqual(self.env['blog.post'].browse(post_id).subtitle, 'Checked')
+        self.assertEqual(self.call('attachments.list', token, post_id=post_id)['attachments'], [])
+        # the permission is one-way: the writer cannot edit the reviewer's drafts
+        self.assertNotIn(reviewer, self.agent.edit_agent_ids)
+        # and nobody edits after publishing
+        self.env['blog.post'].browse(post_id).is_published = True
+        self.assertRejected(403, 'posts.write', token, id=post_id, vals={'subtitle': 'x'})
+
     def test_request_limit(self):
         self.agent.request_limit_per_hour = 2
         self.call('me')

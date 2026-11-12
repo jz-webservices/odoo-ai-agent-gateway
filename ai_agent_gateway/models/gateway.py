@@ -186,11 +186,15 @@ class AiAgentGateway(models.AbstractModel):
     # Helpers
     # ------------------------------------------------------------------
 
+    def _may_edit(self, agent, post):
+        """Created by this agent or by an agent it may edit for (e.g. reviewer)."""
+        return bool(post.ai_agent_id) and post.ai_agent_id in (agent | agent.edit_agent_ids)
+
     def _own_draft(self, agent, post_id):
-        """A draft this agent created itself and that is still unpublished."""
+        """An unpublished draft this agent may edit (see _may_edit)."""
         post = self.env['blog.post'].browse(_int(post_id, 'post_id')).exists()
-        if not post or post.ai_agent_id != agent:
-            raise GatewayError('Post not found or not created by this agent', 404)
+        if not post or not self._may_edit(agent, post):
+            raise GatewayError('Post not found or not editable by this agent', 404)
         if post.is_published:
             raise GatewayError('Post is published - the agent cannot change it any more', 403)
         return post
@@ -238,6 +242,7 @@ class AiAgentGateway(models.AbstractModel):
             'readable_blogs': [{'id': b.id, 'name': b.name}
                                for b in agent.read_blog_ids | agent.write_blog_ids],
             'draft_blogs': [{'id': b.id, 'name': b.name} for b in agent.write_blog_ids],
+            'may_edit_drafts_of': [{'id': a.id, 'name': a.name} for a in agent.edit_agent_ids],
             'shared_files': [{'id': a.id, 'name': a.name} for a in agent.attachment_ids],
             'mails_left_today': max(agent.mail_limit_per_day - agent._mails_sent_today(), 0)
             if agent.can_send_mail else 0,
@@ -313,7 +318,7 @@ class AiAgentGateway(models.AbstractModel):
         allowed = attachment in agent.attachment_ids
         if attachment and not allowed and attachment.res_model == 'blog.post':
             post = self.env['blog.post'].browse(attachment.res_id).exists()
-            allowed = bool(post and post.ai_agent_id == agent and not post.is_published)
+            allowed = bool(post and self._may_edit(agent, post) and not post.is_published)
         if not attachment or not allowed:
             raise GatewayError(f'Attachment {att_id} is not readable for this agent', 403)
         return {'id': attachment.id, 'name': attachment.name,
