@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_ai_agent_root" name="AI Agents" parent="base.menu_administration"
+              sequence="60" groups="base.group_system"/>
+    <menuitem id="menu_ai_agent" name="Agents" parent="menu_ai_agent_root"
+              action="ai_agent_action" sequence="10"/>
+    <menuitem id="menu_ai_agent_log" name="Calls" parent="menu_ai_agent_root"
+              action="ai_agent_log_action" sequence="20"/>
+</odoo>
