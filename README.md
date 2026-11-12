@@ -15,10 +15,26 @@ AI agent ──Bearer token──▶ /ai-agent-gateway/v1/<action> ──▶ che
                                        └─ token hash · capabilities · scope · rate limit · call log
 ```
 
+[![tests](https://github.com/jz-webservices/odoo-ai-agent-gateway/actions/workflows/tests.yml/badge.svg)](https://github.com/jz-webservices/odoo-ai-agent-gateway/actions/workflows/tests.yml)
+
 - Odoo **19.0**, Community or Enterprise – depends only on `website_blog` and `mail`
 - License: **LGPL-3.0** (like Odoo Community)
 
 ---
+
+## Screenshots
+
+**One record per agent** – capabilities, blogs, shared files, token:
+
+![Agent form](docs/images/agent-form.png)
+
+**Every call is logged** – rejected calls in red:
+
+![Call log](docs/images/call-log.png)
+
+**Tokens are shown once** – Odoo stores only the hash:
+
+![Token dialog](docs/images/token-dialog.png)
 
 ## What an agent can do – and nothing more
 

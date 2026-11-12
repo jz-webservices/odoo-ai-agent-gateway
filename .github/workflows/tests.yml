@@ -1,0 +1,39 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  no-ai-coauthor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reject AI co-author trailers
+        run: |
+          if git log --format=%B | grep -qiE '^co-authored-by:.*(claude|anthropic)|noreply@anthropic\.com'; then
+            echo "AI co-author lines are not allowed in this repository." >&2
+            exit 1
+          fi
+
+  odoo-19:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Start PostgreSQL
+        run: |
+          docker network create odoo-test
+          docker run -d --name db --network odoo-test \
+            -e POSTGRES_USER=odoo -e POSTGRES_PASSWORD=odoo -e POSTGRES_DB=postgres postgres:16
+          until docker exec db pg_isready -U odoo; do sleep 1; done
+      - name: Install module and run tests (Odoo 19 Community)
+        run: |
+          docker run --rm --network odoo-test -e HOST=db -e USER=odoo -e PASSWORD=odoo \
+            -v "$PWD":/mnt/extra-addons:ro odoo:19.0 \
+            odoo -d test -i ai_agent_gateway --test-enable --test-tags /ai_agent_gateway \
+                 --stop-after-init --log-level=test 2>&1 | tee odoo.log
+          grep -q "odoo.tests.result: 0 failed, 0 error(s)" odoo.log
+          ! grep -E " (ERROR|CRITICAL) " odoo.log
